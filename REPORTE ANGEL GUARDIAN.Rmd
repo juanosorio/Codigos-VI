@@ -1,0 +1,94 @@
+---
+title: "TABLERO CONTROL ÁNGEL GUARDIÁN - EXPERIENCIA AMIGO - GERENCIA DE VIDA"
+#author: "Juan Camilo Osorio"
+date: "2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+library(dplyr)
+library(knitr)
+    
+AG <- read.csv('C:/Users/Public/Documents/EXPERIENCIA AMIGO/ANGEL GUARDIAN/AG20180705.csv')
+attach(AG)
+
+resumen_angel <- summarise(group_by(AG, NUMDOC, COBERTURA, LINEAEXPRESS..S.N.,CANAL.DE.REPORTE,FUNCIONARIO..S.N.,DECISION,FORMA.DE.PAGO,AÑO),min(MES), max(TIEMPO.ANGEL.RESPUESTA))
+
+
+names(resumen_angel)<-c("NUMDOC","COBERTURA","LINEAEXPRESS..S.N.","CANAL.DE.REPORTE","FUNCIONARIO..S.N.","DECISION","FORMA.DE.PAGO","AÑO", "MES","ANGEL.RESPUESTA")
+
+resumen_angel<-resumen_angel[resumen_angel[,"AÑO"]==2018,]
+resumen_angel<-resumen_angel[resumen_angel[,"MES"]>=1,]
+
+OPORT.INDEX.NLE<-resumen_angel[resumen_angel[,"LINEAEXPRESS..S.N."]=='N',]
+#OPORT.INDEX.NLE<-OPORT.INDEX.NLE[OPORT.INDEX.NLE[,"COBERTURA"]=='VID',]
+OPORT.INDEX1.NLE<-OPORT.INDEX.NLE[OPORT.INDEX.NLE[,"ANGEL.RESPUESTA"]<=30,]
+No.linea.expres<-nrow(OPORT.INDEX1.NLE)/nrow(OPORT.INDEX.NLE)
+
+OPORT.INDEX.LE<-resumen_angel[resumen_angel[,"COBERTURA"]=='VID',]
+OPORT.INDEX.LE<-OPORT.INDEX.LE[OPORT.INDEX.LE[,"LINEAEXPRESS..S.N."]=='S',]
+OPORT.INDEX1.LE<-OPORT.INDEX.LE[OPORT.INDEX.LE[,"ANGEL.RESPUESTA"]<=7,]
+linea.expres<-nrow(OPORT.INDEX1.LE)/nrow(OPORT.INDEX.LE)
+
+oportunidad<-rbind(linea.expres,No.linea.expres)
+oportunidad<-as.data.frame(oportunidad)
+#nom.oport<-rbind('Linea Exprés','No linea Exprés')
+names(oportunidad)<- 'Ind.Oportunidad'
+
+#oportunidad<-cbind(nom.oport,oportunidad)
+
+registros_x_cob <- summarise(group_by(resumen_angel,COBERTURA), n=n(), mean(ANGEL.RESPUESTA))
+names(registros_x_cob)<-c("COBERTURA","No.","T RESP (DÍAS)")
+
+registros_LX <- filter(summarise(group_by(resumen_angel,LINEAEXPRESS..S.N.,COBERTURA), n=n(), mean(ANGEL.RESPUESTA)),COBERTURA=='VID')
+names(registros_LX)<-c("LINEAEXPRES (S/N)","COBERTURA","No.","T RESP (DÍAS)")
+
+registros_x_canal <- summarise(group_by(resumen_angel, CANAL.DE.REPORTE), n=n())
+names(registros_x_canal)<-c("CANAL DE REPORTE","No.")
+registos_x_decision <- summarise(group_by(resumen_angel, DECISION), n=n(), mean(ANGEL.RESPUESTA))
+names(registos_x_decision)<-c("DECISIÓN","No.","T RESP (DÍAS)")
+registos_x_ForPag <- filter(summarise(group_by(resumen_angel,FORMA.DE.PAGO), n=n()), FORMA.DE.PAGO != '')
+names(registos_x_ForPag)<-c("FORMA DE PAGO","No.")
+```
+
+## Reporte de los indicadores de gestion del Ángel Guardían 
+
+###1. Número de casos que han sido recibidos por el Ángel Guardían según la cobertura 
+```{r, resulsts="asis"}
+kable(registros_x_cob)
+```
+
+###2. Número de casos que fueron ingresados por Linea Exprés
+
+```{r, results="asis"}
+kable(registros_LX)
+```
+
+###3. Número de casos por canal de reporte
+
+```{r, results="asis"}
+kable(registros_x_canal)
+```
+
+###4. Número de registros según la decición tomada por el Ángel
+
+```{r}
+kable(registos_x_decision)
+```
+
+###5. Número de registros según la forma en que fue entregada la indenmización 
+
+```{r}
+kable(registos_x_ForPag)
+```
+
+### 6. Incador de Oportunidad
+
+```{r}
+kable(oportunidad)
+```
+
